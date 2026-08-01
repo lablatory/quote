@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deep Forest Quote Widget</title>
+  <!-- Google Fonts: Noto Serif JP を読み込み -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* ライトモード（朝の森） */
+      --text-color: #1a2a1a; /* 深い緑黒 */
+      --sub-color: #3d5a3d; /* くすんだ緑 */
+      --border-color: #2c3e2c; /* クオート線（濃い緑） */
+      --shadow-color: rgba(0, 30, 0, 0.15);
+      
+      /* 背景画像の処理設定（明るめ） */
+      --bg-overlay: rgba(240, 248, 240, 0.5); /* 薄い緑の霧 */
+      --bg-blur: blur(0px); /* ライトモードはぼかさない */
+    }
+
+    /* Notionのダークモード自動判別 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        /* ダークモード（夜の森） */
+        --text-color: #ecf0f1; /* アイボリー */
+        --sub-color: #b0bec5; /* 薄いグレー */
+        --border-color: #81c784; /* クオート線（明るい緑） */
+        --shadow-color: rgba(0, 0, 0, 0.7);
+        
+        /* 背景画像の処理設定（暗く、ぼかす） */
+        --bg-overlay: rgba(10, 20, 10, 0.85); /* 濃い夜の帳 */
+        --bg-blur: blur(2px); /* 夜は少し幻想的にぼかす */
+      }
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Serif JP', serif; /* カウントダウンと同じセリフ体 */
+      background-color: transparent;
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+      overflow: hidden; /* Notion内でのスクロールバー防止 */
+    }
+
+    /* 背景画像専用のレイヤー */
+    .background-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('bg.png'); /* 画像ファイルを指定 */
+      background-size: cover;
+      background-position: center;
+      z-index: -2;
+    }
+
+    /* 背景を明るく/暗くするためのオーバーレイレイヤー */
+    .background-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-overlay);
+      backdrop-filter: var(--bg-blur);
+      z-index: -1;
+    }
+
+    /* クオートブロック全体のデザイン */
+    .notion-quote-container {
+      width: 90%;
+      max-width: 500px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.15); /* 背景を少し透過 */
+      border-radius: 12px;
+      box-shadow: 0 4px 15px var(--shadow-color);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-sizing: border-box;
+    }
+
+    /* Notionのクオートブロックを再現したデザイン（左の縦線） */
+    .notion-quote-border {
+      border-left: 3px solid var(--border-color);
+      padding-left: 14px;
+      margin: 0;
+    }
+
+    .date {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--sub-color);
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .quote-text {
+      font-size: 1.05rem;
+      font-weight: 400;
+      line-height: 1.6;
+      font-style: italic; /* 名言っぽく斜体に */
+      margin: 0;
+    }
+
+    .author {
+      font-size: 0.85rem;
+      color: var(--sub-color);
+      margin-top: 6px;
+      text-align: right;
+      font-style: normal;
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景画像レイヤー -->
+  <div class="background-container"></div>
+  <div class="background-overlay"></div>
+
+  <!-- コンテンツレイヤー -->
+  <div class="notion-quote-container">
+    <div class="notion-quote-border">
+      <div id="current-date" class="date"></div>
+      <p id="quote-text" class="quote-text">Loading deep forest words...</p>
+      <div id="quote-author" class="author"></div>
+    </div>
+  </div>
+
+  <script>
+    // 仕事に役立つ名言リスト（31日分または日付シード値で日替わり表示）
+    // 好きな名言に自由に書き換えてください。
+    const quotes = [
+      { text: "最も強い者が生き残るのではなく、最も賢い者が生き残るのでもない。唯一生き残るのは、変化できる者である。", author: "チャールズ・ダーウィン" },
+      { text: "成功とは、情熱を失わずに失敗から失敗へと進んでいく能力のことだ。", author: "ウィンストン・チャーチル" },
+      { text: "小さなことを積み重ねることが、とんでもないところへ行く唯一の道。", author: "イチロー" },
+      { text: "卓越した才能などない。ただ、強烈な好奇心を持っているだけだ。", author: "アルベルト・アインシュタイン" },
+      { text: "完璧を目指すより、まず終わらせろ。（Done is better than perfect.）", author: "マーク・ザッカーバーグ" },
+      { text: "未来を予測する最良の方法は、未来を自分で創ることだ。", author: "ピーター・ドラッカー" },
+      { text: "自分が出したアイデアを、誰かに盗まれたとしても気にするな。本当に素晴らしいアイデアなら、相手の喉に押し込まなければ採用されない。", author: "ハワード・エイケン" },
+      { text: "品質とは、誰も見ていないときに正しいことを行うことだ。", author: "ヘンリー・フォード" },
+      { text: "時間は限られている。だから、誰か他の人の人生を生きることで時間を無駄にしてはいけない。", author: "スティーブ・ジョブズ" },
+      { text: "最大のリスクは、リスクをまったく取らないことだ。", author: "マーク・ザッカーバーグ" },
+      { text: "今日という日は、残りの人生の最初の一日である。", author: "チャールズ・ディードリッヒ" },
+      { text: "できると思えばできる、できないと思えばできない。どちらも正しい。", author: "ヘンリー・フォード" }
+    ];
+
+    // 日付の更新
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const date = String(now.getDate()).padStart(2, '0');
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayName = days[now.getDay()];
+
+    document.getElementById('current-date').textContent = `${year}年${month}月${date}日 (${dayName})`;
+
+    // 日付（1日〜31日）を元にインデックスを計算して毎日違う名言を表示
+    // 配列の長さで割ることで、名言が少なくてもローテーションします
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+    const selectedQuote = quotes[dayOfYear % quotes.length];
+
+    document.getElementById('quote-text').textContent = `“${selectedQuote.text}”`;
+    document.getElementById('quote-author').textContent = `— ${selectedQuote.author}`;
+  </script>
+</body>
+</html>
