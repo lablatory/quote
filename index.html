@@ -10,36 +10,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* ライトモード（朝の森） */
-      --text-color: #1a2a1a; /* 深い緑黒 */
-      --sub-color: #3d5a3d; /* くすんだ緑 */
-      --border-color: #2c3e2c; /* クオート線（濃い緑） */
-      --shadow-color: rgba(0, 30, 0, 0.15);
-      
-      /* 背景画像の処理設定（明るめ） */
-      --bg-overlay: rgba(240, 248, 240, 0.5); /* 薄い緑の霧 */
-      --bg-blur: blur(0px); /* ライトモードはぼかさない */
-    }
-
-    /* Notionのダークモード自動判別 */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        /* ダークモード（夜の森） */
-        --text-color: #ecf0f1; /* アイボリー */
-        --sub-color: #b0bec5; /* 薄いグレー */
-        --border-color: #81c784; /* クオート線（明るい緑） */
-        --shadow-color: rgba(0, 0, 0, 0.7);
-        
-        /* 背景画像の処理設定（暗く、ぼかす） */
-        --bg-overlay: rgba(10, 20, 10, 0.85); /* 濃い夜の帳 */
-        --bg-blur: blur(2px); /* 夜は少し幻想的にぼかす */
-      }
+      --text-color: #1a2a1a;        /* 深い緑黒 */
+      --sub-color: #2c422c;         /* 濃い緑 */
+      --border-color: #1e331e;      /* クオート線 */
+      --shadow-color: rgba(0, 0, 0, 0.25);
     }
 
     body {
       margin: 0;
       padding: 0;
-      font-family: 'Noto Serif JP', serif; /* カウントダウンと同じセリフ体 */
+      font-family: 'Noto Serif JP', serif;
       background-color: transparent;
       color: var(--text-color);
       display: flex;
@@ -47,31 +27,30 @@
       justify-content: center;
       min-height: 100vh;
       box-sizing: border-box;
-      overflow: hidden; /* Notion内でのスクロールバー防止 */
+      overflow: hidden;
     }
 
-    /* 背景画像専用のレイヤー */
+    /* 背景画像レイヤー（ぼかし処理を一切排除し、完全に鮮明に表示） */
     .background-container {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-image: url('bg.png'); /* 画像ファイルを指定 */
+      background-image: url('bg.png');
       background-size: cover;
       background-position: center;
       z-index: -2;
     }
 
-    /* 背景を明るく/暗くするためのオーバーレイレイヤー */
+    /* 背景の明るさ・色味を損なわないよう、最小限の補正のみ行う薄いフィルター */
     .background-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: var(--bg-overlay);
-      backdrop-filter: var(--bg-blur);
+      background-color: rgba(255, 255, 255, 0.1); /* 画像自体の鮮明さを残す極薄フィルター */
       z-index: -1;
     }
 
@@ -79,18 +58,18 @@
     .notion-quote-container {
       width: 90%;
       max-width: 500px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.15); /* 背景を少し透過 */
+      padding: 18px 20px;
+      /* 背景画像の鮮明さを邪魔しない程度に、テキスト可読性を保つすりガラス背景 */
+      background: rgba(255, 255, 255, 0.65); 
       border-radius: 12px;
-      box-shadow: 0 4px 15px var(--shadow-color);
-      backdrop-filter: blur(5px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 6px 20px var(--shadow-color);
+      border: 1px solid rgba(255, 255, 255, 0.4);
       box-sizing: border-box;
     }
 
-    /* Notionのクオートブロックを再現したデザイン（左の縦線） */
+    /* Notionのクオートブロック再現（左の縦線） */
     .notion-quote-border {
-      border-left: 3px solid var(--border-color);
+      border-left: 4px solid var(--border-color);
       padding-left: 14px;
       margin: 0;
     }
@@ -105,14 +84,15 @@
 
     .quote-text {
       font-size: 1.05rem;
-      font-weight: 400;
+      font-weight: 700; /* 背景に負けないようフォントを太字化 */
       line-height: 1.6;
-      font-style: italic; /* 名言っぽく斜体に */
+      font-style: italic;
       margin: 0;
     }
 
     .author {
       font-size: 0.85rem;
+      font-weight: 700;
       color: var(--sub-color);
       margin-top: 6px;
       text-align: right;
@@ -121,11 +101,9 @@
   </style>
 </head>
 <body>
-  <!-- 背景画像レイヤー -->
   <div class="background-container"></div>
   <div class="background-overlay"></div>
 
-  <!-- コンテンツレイヤー -->
   <div class="notion-quote-container">
     <div class="notion-quote-border">
       <div id="current-date" class="date"></div>
@@ -135,8 +113,6 @@
   </div>
 
   <script>
-    // 仕事に役立つ名言リスト（31日分または日付シード値で日替わり表示）
-    // 好きな名言に自由に書き換えてください。
     const quotes = [
       { text: "最も強い者が生き残るのではなく、最も賢い者が生き残るのでもない。唯一生き残るのは、変化できる者である。", author: "チャールズ・ダーウィン" },
       { text: "成功とは、情熱を失わずに失敗から失敗へと進んでいく能力のことだ。", author: "ウィンストン・チャーチル" },
@@ -152,7 +128,6 @@
       { text: "できると思えばできる、できないと思えばできない。どちらも正しい。", author: "ヘンリー・フォード" }
     ];
 
-    // 日付の更新
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -162,8 +137,6 @@
 
     document.getElementById('current-date').textContent = `${year}年${month}月${date}日 (${dayName})`;
 
-    // 日付（1日〜31日）を元にインデックスを計算して毎日違う名言を表示
-    // 配列の長さで割ることで、名言が少なくてもローテーションします
     const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
     const selectedQuote = quotes[dayOfYear % quotes.length];
 
